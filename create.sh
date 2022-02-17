@@ -13,11 +13,16 @@ multipass exec k8s-control-panel -- . /opt/k8s/init.sh $MIRROR
 multipass exec k8s-control-panel -- . /opt/k8s/install-k8s.sh $KUBE_VERSION $MIRROR
 multipass exec k8s-control-panel -- . /opt/k8s/setup-control-panel.sh $CONTROL_PANEL_IP $MIRROR
 
-for i in $(seq 1 $NODES) ;do
-multipass launch --name k8s-node-$i --cpus 2 --mem 2G --disk 10G
-multipass mount $(pwd)/scripts k8s-node-$i:/opt/k8s/
-multipass mount $(pwd)/share k8s-node-$i:/share
-multipass exec k8s-node-$i -- . /opt/k8s/init.sh $MIRROR
-multipass exec k8s-node-$i -- . /opt/k8s/install-k8s.sh $KUBE_VERSION $MIRROR
-multipass exec k8s-node-$i -- . /opt/k8s/setup-worker-node.sh
+function setup_node(){
+    NODE_INDEX=$1
+    multipass launch --name k8s-node-$NODE_INDEX --cpus 2 --mem 2G --disk 10G
+    multipass mount $(pwd)/scripts k8s-node-$NODE_INDEX:/opt/k8s/
+    multipass mount $(pwd)/share k8s-node-$NODE_INDEX:/share
+    multipass exec k8s-node-$NODE_INDEX -- . /opt/k8s/init.sh $MIRROR
+    multipass exec k8s-node-$NODE_INDEX -- . /opt/k8s/install-k8s.sh $KUBE_VERSION $MIRROR
+    multipass exec k8s-node-$NODE_INDEX -- . /opt/k8s/setup-worker-node.sh
+}
+
+for INDEX in $(seq 1 $NODES) ;do
+    setup_node $INDEX &
 done
