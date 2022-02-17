@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-KUBE_VERSION="1.23.0-0"
+KUBE_VERSION="latest" # latest or given version
 MIRROR="aliyun" # <empty>/aliyun
 NODES=2
 

@@ -40,9 +40,13 @@ echo "sudo swapoff -a">>$HOME/.bashrc
 echo "Install Kubernetes packages via package manager."
 
 KUBE_VERSION=$1
+if [ "$KUBE_VERSION" == "latest" ];then
+  VERSION_STRING=""
+else
+  VERSION_STRING="=$KUBE_VERSION0"
+fi
+
 PACKAGE_MIRROR=$2
-
-
 if [ "$PACKAGE_MIRROR" = "aliyun" ];then
   PACKAGE_URL=mirrors.aliyun.com/kubernetes
 elif [ "$PACKAGE_MIRROR" = "tencent" ];then
@@ -51,13 +55,11 @@ else
   PACKAGE_URL=packages.cloud.google.com
 fi
 
-
 sudo apt update
 sudo apt install -y apt-transport-https ca-certificates curl
 curl https://$PACKAGE_URL/apt/doc/apt-key.gpg | sudo apt-key add -
 echo "deb https://$PACKAGE_URL/apt/ kubernetes-xenial main"|sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt update
-ZERO=0
-sh -c "sudo apt install -y kubelet=$KUBE_VERSION$ZERO kubeadm=$KUBE_VERSION$ZERO kubectl=$KUBE_VERSION$ZERO"
+sh -c "sudo apt install -y kubelet$VERSION_STRING kubeadm$VERSION_STRING kubectl$VERSION_STRING"
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
