@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-CONTROL_PANEL_IP=$1
-K8S_IMAGE_REPO=$2
+K8S_IMAGE_REPO=$1
 
 # Setup firewalld for k8s
 echo "Setting up firewalld for k8s, refer to https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/"
@@ -13,8 +12,8 @@ sudo firewall-cmd --zone=public --permanent --add-port=10250-10252/tcp
 sudo firewall-cmd --reload
 
 # Install and setup control panel
-echo "Setup Kubernetes Control Panel, IP: $CONTROL_PANEL_IP, Image Ropo: $K8S_IMAGE_REPO"
-sudo sh -c "echo '$(hostname -i) k8scp' >> /etc/hosts"
+echo "Setup Kubernetes Control Panel, Image Ropo: $K8S_IMAGE_REPO"
+
 if [ -n "$K8S_IMAGE_REPO" ];then
     K8S_IMAGE_REPO_URL="registry.aliyuncs.com/google_containers"
 else
@@ -23,9 +22,9 @@ fi
 
 sudo kubeadm init --v=5 \
     --image-repository=$K8S_IMAGE_REPO_URL \
-    --apiserver-advertise-address=$CONTROL_PANEL_IP \
+    --apiserver-advertise-address=$(hostname -I|awk '{print $1}') \
     --service-cidr=10.0.0.0/16 \
-    --pod-network-cidr=192.168.0.0/16
+    --pod-network-cidr=10.1.0.0/16
 
 if [ $? = 0 ]; then
     sudo sed -i 's/- --port=0$/#- --port=0/' /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -39,33 +38,6 @@ else
     exit 1
 fi
 
-# Install and setup calico
-echo "Install and configure calico"
-kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-cat <<EOF | sudo tee $HOME/configs/calico.yaml
-apiVersion: operator.tigera.io/v1
-kind: Installation
-metadata:
-  name: default
-spec:
-  # Configures Calico networking.
-  calicoNetwork:
-    # Note: The ipPools section cannot be modified post-install.
-    ipPools:
-    - blockSize: 26
-      cidr: $CONTROL_PANEL_IP/16
-      encapsulation: VXLANCrossSubnet
-      natOutgoing: Enabled
-      nodeSelector: all()
----
-apiVersion: operator.tigera.io/v1
-kind: APIServer
-metadata:
-  name: default
-spec: {}
-EOF
-kubectl create -f $HOME/configs/calico.yaml
-
 # Create join-cluster.sh
 echo "$(kubeadm token create --print-join-command --ttl 0) --v=5" > /share/join-cluster.sh
 chmod 755 /share/join-cluster.sh
@@ -74,3 +46,9 @@ chmod 755 /share/join-cluster.sh
 echo "Install helm"
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
+# Install and setup calico
+echo "Install and configure calico"
+curl -o calico.yaml https://docs.projectcalico.org/manifests/calico.yaml
+sed -i 's/# - name: CALICO_IPV4POOL_CIDR/- name: CALICO_IPV4POOL_CIDR/' calico.yaml
+sed -i 's/#   value: "192.168.0.0\/16"/  value: "10.1.0.0\/16"/' calico.yaml
+kubectl apply -f calico.yaml
