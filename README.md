@@ -4,13 +4,19 @@ Create & destroy a Kubernetes cluster by [Multipass](https://multipass.run).
 
 ## Introduction
 
-This repo contains serveral scripts and configuration files that allow you to setup a k8s cluster with 2 nodes.
+This repo contains serveral scripts and configuration files that allow you to setup a k8s cluster with 2 nodes(default).
 
 `create.sh` will create a kubernetes control panel node named `k8s-control-panel` and two(default) nodes named `k8s-node-1` and `k8s-node-2` by multipass.
 
 `check.sh` will check nodes are ready.
 
 `destory.sh` will stop and purge all nodes.
+
+`stop.sh` will stop all nodes.
+
+`start.sh` will start all nodes.
+
+`restart.sh` will restart all nodes.
 
 ## Prerequisites
 
