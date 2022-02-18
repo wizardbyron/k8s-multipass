@@ -93,9 +93,14 @@ sh -c "sudo apt install -y kubelet$VERSION_STRING kubeadm$VERSION_STRING kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 
-## post installation
-mkdir $HOME/configs
+# Install calicoctl
+echo "Install calicoctl"
+sudo curl -L https://github.com/projectcalico/calico/releases/download/v3.22.0/calicoctl-linux-amd64 -o /usr/local/bin/calicoctl
+sudo chmod +x /usr/local/bin/calicoctl
+
+## Post installation
+sudo mkdir $HOME/configs
 ssh-keygen  -t rsa -P '' -f $HOME/.ssh/identity
 
-## Alias
+## Set Alias
 alias pip="python3 -m pip"
