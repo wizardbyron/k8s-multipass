@@ -38,4 +38,3 @@ function create_cluster(){
 }
 
 create_cluster
-echo "Kubernetes cluster has been setup, Please restart all nodes by `./restart.sh`"

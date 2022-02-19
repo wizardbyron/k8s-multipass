@@ -3,9 +3,7 @@ set -e
 export PATH=$PATH:/home/$(whoami)/.local/bin
 
 MIRROR=$1
-if [ "$MIRROR" == "tencent" ];then
-    MIRROR_URL=mirrors.tencent.com
-elif [ "$MIRROR" == "aliyun" ];then
+if [ "$MIRROR" == "aliyun" ];then
     MIRROR_URL=mirrors.aliyun.com
 fi
 
@@ -85,7 +83,6 @@ else
     K8S_PKG_URL=packages.cloud.google.com
 fi
 
-sudo apt install -y apt-transport-https ca-certificates curl
 curl https://$K8S_PKG_URL/apt/doc/apt-key.gpg | sudo apt-key add -
 echo "deb https://$K8S_PKG_URL/apt/ kubernetes-xenial main"|sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt update -y
