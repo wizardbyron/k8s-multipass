@@ -44,7 +44,10 @@ chmod 755 /share/join-cluster.sh
 
 # Install helm
 echo "Install helm"
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
+echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update -y
+sudo apt-get install -y helm
 
 # Install and setup calico
 echo "Install and configure calico"
