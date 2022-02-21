@@ -1,0 +1,113 @@
+
+#!/usr/bin/env bash
+
+K8S_VER="latest" # latest or given version
+MIRROR="aliyun" # <empty>/aliyun
+NODES=2
+
+function cluster_cmd(){
+    COMMAND=$1 # start/stop/restart/delete
+    for INSTANCE in $(multipass list|grep k8s-|awk '{print $1}');do
+        multipass $COMMAND $INSTANCE
+    done
+}
+
+function setup_control_panel(){
+    multipass launch --name k8s-control-panel --cpus 4 --mem 4G --disk 20G
+    if [ $? -eq 0 ];then
+        multipass mount $(pwd)/scripts k8s-control-panel:/opt/k8s/
+        multipass mount $(pwd)/share k8s-control-panel:/share
+        multipass exec k8s-control-panel -- . /opt/k8s/init.sh $MIRROR $K8S_VER
+        multipass exec k8s-control-panel -- . /opt/k8s/setup-control-panel.sh $MIRROR
+    else
+        exit 1
+    fi
+}
+
+function setup_node(){
+    NODE_INDEX=$1
+    multipass launch --name k8s-node-$NODE_INDEX --cpus 4 --mem 4G --disk 20G
+    if [ $? -eq 0 ];then
+        multipass mount $(pwd)/scripts k8s-node-$NODE_INDEX:/opt/k8s/
+        multipass mount $(pwd)/share k8s-node-$NODE_INDEX:/share
+        multipass exec k8s-node-$NODE_INDEX -- . /opt/k8s/init.sh $MIRROR $K8S_VER
+        multipass exec k8s-node-$NODE_INDEX -- . /opt/k8s/setup-worker-node.sh
+    else
+        exit 1
+    fi
+}
+
+function create_cluster(){
+    setup_control_panel
+    for INDEX in $(seq 1 $NODES) ;do
+        setup_node $INDEX &
+    done
+    wait
+}
+
+function check_work_nodes_ready(){
+    READY_NODES=$(multipass exec k8s-control-panel -- kubectl get nodes|grep "Ready"|wc -l)
+    NOT_READY_NODES=$(multipass exec k8s-control-panel -- kubectl get nodes|grep "NotReady"|wc -l)
+    echo "$READY_NODES node(s) are Ready, $NOT_READY_NODES node(s) are NotReady."
+    if [ -z "$NOT_READY_NODES" ];then
+        echo "These node(s) are not ready:"
+        multipass exec k8s-control-panel -- kubectl get nodes|grep "NotReady"
+    fi
+}
+
+function check_all_pods_running(){
+    RUNNING_PODS=$(multipass exec k8s-control-panel -- kubectl get pod -A|grep "Running"|wc -l)
+    NOT_RUNNING_PODS=$(multipass exec k8s-control-panel -- kubectl get pod -A|grep -v "Running"|grep -v "NAMESPACE"|wc -l)
+    echo "$RUNNING_PODS pod(s) are running, $NOT_RUNNING_PODS pod(s) are not running."
+    if [ ! "$NOT_RUNNING_PODS" -eq "0" ];then
+        echo "These pod(s) are not ready:"
+        multipass exec k8s-control-panel -- kubectl get nodes|grep -v "Running"
+    fi
+
+}
+
+function check_all_nodes_ready(){
+    CONTROL_PANEL_STATUS=$(multipass list|grep k8s-control-panel|awk '{print $2}')
+    if [ "$CONTROL_PANEL_STATUS" == "Running" ];then
+        check_work_nodes_ready
+        check_all_pods_running
+        exit 0
+    else
+        echo  "ERROR: k8s-control-panel instance is not running."
+        exit 1
+    fi
+}
+
+
+COMMAND=$1
+SUBCOMMAND=$2
+
+case $COMMAND in 
+"create")
+    create_cluster
+    ;;
+"destory")
+    cluster_cmd delete
+    multipass purge
+    ;;
+"start")
+    cluster_cmd start
+    ;;
+"stop")
+    cluster_cmd stop
+    ;;
+"restart")
+    cluster_cmd restart
+    ;;
+"check")
+    check_all_nodes_ready
+    ;;
+"status")
+    multipass list |grep k8s
+    ;;
+*)
+    echo "usage: ./k8sctl [create|start|stop|restart|destroy|check｜status]"
+    ;;
+esac
+
+
