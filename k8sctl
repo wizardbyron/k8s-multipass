@@ -19,6 +19,7 @@ function setup_control_plane(){
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/init.sh"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/nfs/server.sh"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/dns/server.sh $DOMAIN"
+        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/openldap/server.sh $DOMAIN"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/install.sh $K8S_VER"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/setup-control-plane.sh"
     fi
