@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 K8S_VER="" # <empty for latest> or given version
 NODES=2
+DOMAIN="mycloud.local"
 
 function cluster_cmd(){
     COMMAND=$1 # start/stop/restart/delete
@@ -11,32 +12,30 @@ function cluster_cmd(){
 }
 
 function setup_control_plane(){
-    multipass launch --name k8s-control-plane --cpus 4 --mem 4G --disk 20G
+    multipass launch --name k8s-control-plane --cpus 4 --mem 4G --disk 40G
     if [ $? -eq 0 ];then
         multipass mount $(pwd)/scripts/ k8s-control-plane:/opt/multipass-host/scripts
         multipass mount $(pwd)/share/ k8s-control-plane:/opt/multipass-host/share
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/init.sh"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/nfs/server.sh"
+        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/dns/server.sh $DOMAIN"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/install.sh $K8S_VER"
         multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/setup-control-plane.sh"
-    else
-        exit 1
     fi
 }
 
 function setup_node(){
     NODE_INDEX=$1
-    multipass launch --name k8s-node-$NODE_INDEX --cpus 4 --mem 4G --disk 20G
-    SERVER_IP=$(multipass list|grep k8s-control-plane|awk '{print $3}')
+    MASTER_IP=$(multipass list|grep k8s-control-plane|awk '{print $3}')
+    multipass launch --name k8s-node-$NODE_INDEX --cpus 4 --mem 4G --disk 10G
     if [ $? -eq 0 ];then
         multipass mount $(pwd)/scripts k8s-node-$NODE_INDEX:/opt/multipass-host/scripts
         multipass mount $(pwd)/share k8s-node-$NODE_INDEX:/opt/multipass-host/share
         multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/init.sh"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/nfs/client.sh $SERVER_IP"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/nfs/client.sh $MASTER_IP"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/dns/client.sh $MASTER_IP"
         multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/k8s/install.sh $K8S_VER"
         multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/k8s/setup-worker-node.sh"
-    else
-        exit 1
     fi
 }
 
