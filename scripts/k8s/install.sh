@@ -2,7 +2,7 @@
 KUBE_VERSION=$1
 
 echo "Check google reachable."
-curl -f -s http://packages.cloud.google.com
+curl -f -s -I http://packages.cloud.google.com
 GOOGLE_REACHABLE=$?
 
 if [ "$GOOGLE_REACHABLE" -ne 0 ];then

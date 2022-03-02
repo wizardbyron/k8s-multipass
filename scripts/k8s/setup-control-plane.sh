@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 echo "Check google reachable."
-curl -f -s http://packages.cloud.google.com
+curl -f -s -I http://packages.cloud.google.com
 GOOGLE_REACHABLE=$?
 
 # Setup firewalld for k8s

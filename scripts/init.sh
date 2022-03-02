@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
-
 export PATH=$PATH:/home/$(whoami)/.local/bin
 
-KUBE_VERSION=$1
+MIRROR=$1
 
-echo "Check google package source reachable."
-curl -f -s http://packages.cloud.google.com
-
-if [ $? -ne 0 ];then
+if [ "$MIRROR" == "aliyun" ];then
     MIRROR_URL=mirrors.aliyun.com
-    echo "Use mirror pacakge source: $MIRROR_URL"
+elif [ "$MIRROR" == "tencent" ];then
+    MIRROR_URL=mirrors.tencent.com
 fi
+
+echo "Use mirror pacakge source: $MIRROR_URL"
 
 if [ -n "$MIRROR_URL" ];then
     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
@@ -18,10 +17,9 @@ if [ -n "$MIRROR_URL" ];then
 fi
 
 sudo apt update -y
-sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
 sudo apt full-upgrade -y
+sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
 sudo systemctl enable --now firewalld
-python3 -m pip install --upgrade pip
 
 ### Upgrade pip
 echo "Upgrade pip."
