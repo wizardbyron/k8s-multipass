@@ -31,12 +31,9 @@ else
     sudo sh -c "python3 -m pip install --upgrade pip"
 fi
 
+# install docker-compose
 pip install --user docker-compose
 
-# Install calicoctl
-echo "Install calicoctl"
-sudo curl -L https://github.com/projectcalico/calico/releases/download/v3.22.0/calicoctl-linux-amd64 -o /usr/local/bin/calicoctl
-sudo chmod +x /usr/local/bin/calicoctl
 
 ## Post installation
 mkdir $HOME/configs
