@@ -22,9 +22,7 @@ cat <<EOF | sudo tee /etc/docker/daemon.json
 }
 EOF
 
-sudo systemctl enable --now docker.service
 sudo systemctl restart docker
-sudo usermod -aG docker $(whoami)
 
 # Setup Network
 cat <<EOF | sudo tee /etc/sysctl.conf

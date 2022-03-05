@@ -20,6 +20,8 @@ sudo apt update -y
 sudo apt full-upgrade -y
 sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
 sudo systemctl enable --now firewalld
+sudo systemctl enable --now docker.service
+sudo usermod -aG docker $(whoami)
 
 ### Upgrade pip
 echo "Upgrade pip."
