@@ -84,15 +84,20 @@ function check_all_nodes_ready(){
 
 
 COMMAND=$1
+SUB_COMMAND=$2
 
 case $COMMAND in
 "create")
     create_cluster
     ;;
 "destroy")
-    cluster_cmd stop
-    cluster_cmd delete
-    multipass purge
+    if [ -n "$SUB_COMMAND" ];then
+        multipass delete -p $SUB_COMMAND
+    else
+        cluster_cmd stop
+        cluster_cmd delete
+        multipass purge
+    fi
     ;;
 "start")
     cluster_cmd start
