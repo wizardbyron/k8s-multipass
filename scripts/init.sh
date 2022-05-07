@@ -17,7 +17,7 @@ if [ -n "$MIRROR_URL" ];then
 fi
 
 sudo apt update -y
-sudo apt full-upgrade -y
+sudo apt upgrade -y
 sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
 sudo systemctl enable --now firewalld
 sudo systemctl enable --now docker.service
