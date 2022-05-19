@@ -4,7 +4,7 @@ Create & destroy a Kubernetes cluster by [Multipass](https://multipass.run).
 
 ## Prerequisites
 
-* PC with Internet and enough memory and disk space. (Seriously!!!)
+* PC with Internet connection, enough memory and disk space. (Seriously!!!)
 * [Multipass](https://multipass.run/)
 
 ## Usage
