@@ -13,57 +13,59 @@ function cluster_cmd(){
 }
 
 function setup_control_plane(){
-    multipass launch --name k8s-control-plane --cpus 4 --mem 4G --disk 40G
+    multipass launch --name k8s-cp \
+        --cpus 4 --mem 4G --disk 40G \
+        --mount $(pwd)/scripts/:/opt/host/scripts\
+        --mount $(pwd)/share/:/opt/host/share
     if [ $? -eq 0 ];then
-        multipass mount $(pwd)/scripts/ k8s-control-plane:/opt/multipass-host/scripts
-        multipass mount $(pwd)/share/ k8s-control-plane:/opt/multipass-host/share
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/init.sh $MIRROR"
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/nfs/server.sh"
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/dns/server.sh $DOMAIN"
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/openldap/server.sh $DOMAIN"
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/install.sh $K8S_VER"
-        multipass exec k8s-control-plane -- sh -c "/opt/multipass-host/scripts/k8s/setup-control-plane.sh"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/init.sh $MIRROR"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/nfs/server.sh"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/dns/server.sh $DOMAIN"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/openldap/server.sh $DOMAIN"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/k8s/install.sh $K8S_VER"
+        multipass exec k8s-cp -- sh -c "/opt/host/scripts/k8s/setup-control-plane.sh"
     fi
 }
 
 function setup_node(){
     NODE_INDEX=$1
-    MASTER_IP=$(multipass list|grep k8s-control-plane|awk '{print $3}')
-    multipass launch --name k8s-node-$NODE_INDEX --cpus 4 --mem 4G --disk 10G
+    MASTER_IP=$(multipass list|grep k8s-cp|awk '{print $3}')
+    multipass launch --name k8s-node-$NODE_INDEX \
+        --cpus 4 --mem 4G --disk 10G \
+        --mount $(pwd)/scripts:/opt/host/scripts \
+        --mount $(pwd)/share:/opt/host/share
     if [ $? -eq 0 ];then
-        multipass mount $(pwd)/scripts k8s-node-$NODE_INDEX:/opt/multipass-host/scripts
-        multipass mount $(pwd)/share k8s-node-$NODE_INDEX:/opt/multipass-host/share
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/init.sh $MIRROR"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/nfs/client.sh $MASTER_IP"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/dns/client.sh $MASTER_IP"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/k8s/install.sh $K8S_VER"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/multipass-host/scripts/k8s/setup-worker-node.sh"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/init.sh $MIRROR"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/nfs/client.sh $MASTER_IP"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/dns/client.sh $MASTER_IP"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/k8s/install.sh $K8S_VER"
+        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/k8s/setup-worker-node.sh"
     fi
 }
 
 function create_cluster(){
     setup_control_plane
-    for INDEX in $(seq 1 $NODES) ;do
-        setup_node $INDEX &
+    for ((I=1;I<$NODES;I++)) ;do
+        setup_node $I &
     done
     wait
 }
 
 function check_work_nodes_ready(){
-    NOT_READY_NODES=$(multipass exec k8s-control-plane -- kubectl get nodes|grep "NotReady"|wc -l)
+    NOT_READY_NODES=$(multipass exec k8s-cp -- kubectl get nodes|grep "NotReady"|wc -l)
     if [ "$NOT_READY_NODES" -gt 0 ];then
         echo "These node(s) are not ready:"
-        multipass exec k8s-control-plane -- kubectl get nodes|grep "NotReady"
+        multipass exec k8s-cp -- kubectl get nodes|grep "NotReady"
     else
         echo "All nodes are ready."
     fi
 }
 
 function check_all_pods_running(){
-    NOT_RUNNING_PODS=$(multipass exec k8s-control-plane -- kubectl get pod -A|grep -v "Running"|grep -v "NAMESPACE"|wc -l)
+    NOT_RUNNING_PODS=$(multipass exec k8s-cp -- kubectl get pod -A|grep -v "Running"|grep -v "NAMESPACE"|wc -l)
     if [ "$NOT_RUNNING_PODS" -gt 0 ];then
         echo "These pod(s) are not ready:"
-        multipass exec k8s-control-plane -- kubectl get pod -A|grep -v "Running"
+        multipass exec k8s-cp -- kubectl get pod -A|grep -v "Running"
     else
         echo "All pods are running."
     fi
@@ -71,13 +73,13 @@ function check_all_pods_running(){
 }
 
 function check_all_nodes_ready(){
-    CONTROL_PLANE_STATUS=$(multipass list|grep k8s-control-plane|awk '{print $2}')
+    CONTROL_PLANE_STATUS=$(multipass list|grep k8s-cp|awk '{print $2}')
     if [ "$CONTROL_PLANE_STATUS" == "Running" ];then
         check_work_nodes_ready
         check_all_pods_running
         exit 0
     else
-        echo  "ERROR: k8s-control-plane instance is not running."
+        echo  "ERROR: k8s-cp instance is not running."
         exit 1
     fi
 }
@@ -115,10 +117,8 @@ case $COMMAND in
     multipass list|grep k8s
     ;;
 "login")
-    multipass shell k8s-control-plane
+    multipass shell k8s-cp
     ;;
 *)
     echo "usage: ./k8sctl [create|start|stop|restart|destroy|check|status|login]"
 esac
-
-
