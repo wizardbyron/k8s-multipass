@@ -16,6 +16,8 @@ if [ -n "$MIRROR_URL" ];then
     sudo sed -i "s/archive.ubuntu.com/$MIRROR_URL/g" /etc/apt/sources.list
 fi
 
+sudo sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a'/g" /etc/needrestart/needrestart.conf # Set auto restart service mode
+
 sudo apt update -y
 sudo apt upgrade -y
 sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
