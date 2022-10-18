@@ -16,11 +16,10 @@ sudo firewall-cmd --permanent --add-port=10257/tcp # kube-controller-manager
 sudo firewall-cmd --permanent --add-port=10259/tcp # kube-scheduler
 sudo firewall-cmd --reload
 
-
 # Install and setup control plane
 echo "Setup Kubernetes Control plane."
 if [ "$GOOGLE_REACHABLE" -eq 0 ];then
-    K8S_IMAGE_REPO_URL="k8s.gcr.io"
+    K8S_IMAGE_REPO_URL="registry.k8s.io"
 else
     K8S_IMAGE_REPO_URL="registry.aliyuncs.com/google_containers"
 fi
