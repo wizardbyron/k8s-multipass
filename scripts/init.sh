@@ -18,9 +18,9 @@ fi
 
 sudo sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/g" /etc/needrestart/needrestart.conf # Set auto restart service mode
 
-sudo apt update -y
-sudo apt upgrade -y
-sudo apt install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
+sudo apt-get update -y
+sudo apt-get upgrade -y
+sudo apt-get install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
 sudo systemctl enable --now firewalld
 sudo systemctl enable --now docker.service
 sudo usermod -aG docker $(whoami)

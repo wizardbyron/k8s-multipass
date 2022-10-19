@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-KUBE_VERSION=$1
+K8S_VER=$1
+
+if [ -z "$K8S_VER" ];then
+    echo "Kubernetes version MUST BE given while install."
+    exit 1
+fi
 
 echo "Check google reachable."
 ping -c1 packages.cloud.google.com
@@ -56,18 +61,13 @@ else
   K8S_PKG_URL="$MIRROR_URL/kubernetes"
 fi
 
-if [ -n "$KUBE_VERSION" ];then
-  VERSION_STRING="=$KUBE_VERSION00"
-else
-  VERSION_STRING=""
-fi
 
-echo "Kubernetes package URL:$K8S_PKG_URL, Version: $KUBE_VERSION"
+echo "Install Kubernetes $K8S_VER packages from $K8S_PKG_URL"
 
-sudo sh -c "curl https://$K8S_PKG_URL/apt/doc/apt-key.gpg | apt-key add -"
-echo "deb https://$K8S_PKG_URL/apt/ kubernetes-xenial main"|sudo tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt update -y
-sh -c "sudo apt install -y kubelet$VERSION_STRING kubeadm$VERSION_STRING kubectl$VERSION_STRING"
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://$K8S_PKG_URL/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update -y
+sh -c "sudo apt-get install -y --no-upgrade kubelet=$K8S_VER.0-00 kubeadm=$K8S_VER.0-00 kubectl=$K8S_VER.0-00"
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-K8S_VER="" # <empty for latest> or given version
-MIRROR="aliyun"
-NODES=2
-DOMAIN="mycloud.local"
+MIRROR="tencent"
+NODES=0
+DOMAIN="k8s.local"
 
 function cluster_cmd(){
     COMMAND=$1 # start/stop/restart/delete
@@ -13,6 +12,7 @@ function cluster_cmd(){
 }
 
 function setup_control_plane(){
+    K8S_VER=$1
     multipass launch --name k8s-cp \
         --cpus 4 --mem 4G --disk 40G \
         --mount $(pwd)/scripts/:/opt/host/scripts\
@@ -28,25 +28,27 @@ function setup_control_plane(){
 }
 
 function setup_node(){
-    NODE_INDEX=$1
+    K8S_VER=$1
+    INDEX=$2
     MASTER_IP=$(multipass list|grep k8s-cp|awk '{print $3}')
-    multipass launch --name k8s-node-$NODE_INDEX \
+    multipass launch --name k8s-node-$INDEX \
         --cpus 4 --mem 4G --disk 10G \
         --mount $(pwd)/scripts:/opt/host/scripts \
         --mount $(pwd)/share:/opt/host/share
     if [ $? -eq 0 ];then
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/init.sh $MIRROR"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/nfs/client.sh $MASTER_IP"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/dns/client.sh $MASTER_IP"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/k8s/install.sh $K8S_VER"
-        multipass exec k8s-node-$NODE_INDEX -- sh -c "/opt/host/scripts/k8s/setup-worker-node.sh"
+        multipass exec k8s-node-$INDEX -- sh -c "/opt/host/scripts/init.sh $MIRROR"
+        multipass exec k8s-node-$INDEX -- sh -c "/opt/host/scripts/nfs/client.sh $MASTER_IP"
+        multipass exec k8s-node-$INDEX -- sh -c "/opt/host/scripts/dns/client.sh $MASTER_IP"
+        multipass exec k8s-node-$INDEX -- sh -c "/opt/host/scripts/k8s/install.sh $K8S_VER"
+        multipass exec k8s-node-$INDEX -- sh -c "/opt/host/scripts/k8s/setup-worker-node.sh"
     fi
 }
 
 function create_cluster(){
-    setup_control_plane
-    for ((I=1;I<$NODES;I++)) ;do
-        setup_node $I &
+    K8S_VER=$1
+    setup_control_plane $K8S_VER
+    for ((INDEX=1;INDEX<$NODES;INDEX++)) ;do
+        setup_node $K8S_VER $INDEX &
     done
     wait
 }
@@ -90,7 +92,14 @@ SUB_COMMAND=$2
 
 case $COMMAND in
 "create")
-    create_cluster
+    if [ -z "$SUB_COMMAND" ];then
+        echo "Kubernetes version MUST BE given to create a cluster."
+        echo "Available Versions:"
+        echo "  1.23"
+        exit 1
+    else
+        create_cluster $SUB_COMMAND
+    fi
     ;;
 "destroy")
     if [ -n "$SUB_COMMAND" ];then
@@ -114,11 +123,11 @@ case $COMMAND in
     check_all_nodes_ready
     ;;
 "status")
-    multipass list|grep k8s
+    multipass list|grep k8s-
     ;;
 "login")
     multipass shell k8s-cp
     ;;
 *)
-    echo "usage: ./k8sctl [create|start|stop|restart|destroy|check|status|login]"
+    echo "usage: ./k8sctl [create <version>|destroy|start|stop|restart|check|status|login]"
 esac
