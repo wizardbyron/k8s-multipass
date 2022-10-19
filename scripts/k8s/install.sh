@@ -57,7 +57,7 @@ else
 fi
 
 if [ -n "$KUBE_VERSION" ];then
-  VERSION_STRING="=$KUBE_VERSION0"
+  VERSION_STRING="=$KUBE_VERSION00"
 else
   VERSION_STRING=""
 fi
