@@ -19,16 +19,17 @@ sudo firewall-cmd --reload
 # Install and setup control plane
 echo "Setup Kubernetes Control plane."
 if [ "$GOOGLE_REACHABLE" -eq 0 ];then
-    K8S_IMAGE_REPO_URL="registry.k8s.io"
+    # K8S_IMAGE_REPO_URL="registry.k8s.io"
+    K8S_IMAGE_REPO_URL="k8s.gcr.io"
 else
     K8S_IMAGE_REPO_URL="registry.aliyuncs.com/google_containers"
 fi
 echo "Kubernetes image source: $K8S_IMAGE_REPO_URL"
 
 sudo kubeadm init --v=5 \
-    --image-repository=$K8S_IMAGE_REPO_URL \
+    --pod-network-cidr=10.0.0.0/16 \
     --apiserver-advertise-address=$(hostname -I|awk '{print $1}') \
-    --pod-network-cidr=10.0.0.0/16
+    --image-repository=$K8S_IMAGE_REPO_URL
 
 if [ $? -eq 0 ]; then
     sudo sed -i 's/- --port=0$/#- --port=0/' /etc/kubernetes/manifests/kube-controller-manager.yaml
@@ -42,9 +43,9 @@ else
     exit 1
 fi
 
-# Create join-cluster.sh
-echo "sudo $(kubeadm token create --print-join-command --ttl 0) --v=5" > /mnt/nfs-root/join-cluster.sh
-chmod 755 /mnt/nfs-root/join-cluster.sh
+# Create join-cp.sh for nodes join this control plane
+echo "sudo $(kubeadm token create --print-join-command --ttl 0) --v=5" > /mnt/nfs/join-cp.sh
+chmod 755 /mnt/nfs/join-cp.sh
 
 # Install and setup calico
 echo "Install and configure calico"
@@ -55,7 +56,8 @@ kubectl apply -f $HOME/configs/calico.yaml
 
 # Install helm
 echo "Install helm"
-curl https://baltocdn.com/helm/signing.asc | sudo apt-key add -
-echo "deb https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
-sudo apt-get update -y
-sudo apt-get install -y helm
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+sudo apt-get update
+sudo apt-get install helm
