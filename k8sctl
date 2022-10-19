@@ -96,6 +96,9 @@ case $COMMAND in
         echo "Kubernetes version MUST BE given to create a cluster."
         echo "Available Versions:"
         echo "  1.23"
+        echo "  1.22"
+        echo "  1.21"
+        echo "  1.20"
         exit 1
     else
         create_cluster $SUB_COMMAND
