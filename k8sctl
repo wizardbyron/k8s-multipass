@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 MIRROR="tencent"
-NODES=0
+NODES=2
 DOMAIN="k8s.local"
 
 function cluster_cmd(){
@@ -47,7 +47,7 @@ function setup_node(){
 function create_cluster(){
     K8S_VER=$1
     setup_control_plane $K8S_VER
-    for ((INDEX=1;INDEX<$NODES;INDEX++)) ;do
+    for ((INDEX=1;INDEX<=$NODES;INDEX++)) ;do
         setup_node $K8S_VER $INDEX &
     done
     wait
