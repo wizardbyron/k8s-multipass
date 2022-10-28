@@ -6,7 +6,7 @@ if [ -z "$K8S_VER" ];then
     exit 1
 fi
 
-echo "Check google reachable."
+echo "Check packages.cloud.google.com reachable."
 ping -c1 packages.cloud.google.com
 GOOGLE_REACHABLE=$?
 
@@ -65,7 +65,7 @@ fi
 echo "Install Kubernetes $K8S_VER packages from $K8S_PKG_URL"
 
 sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://$K8S_PKG_URL/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://$K8S_PKG_URL/apt kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -y
 sh -c "sudo apt-get install -y --no-upgrade kubelet=$K8S_VER.0-00 kubeadm=$K8S_VER.0-00 kubectl=$K8S_VER.0-00"
 sudo apt-mark hold kubelet kubeadm kubectl
