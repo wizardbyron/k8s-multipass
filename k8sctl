@@ -47,7 +47,10 @@ function setup_node(){
 function create_cluster(){
     K8S_VER=$1
     setup_control_plane $K8S_VER
-    for ((INDEX=1;INDEX<=$NODES;INDEX++)) ;do
+    INDEX=0
+    while [ "$INDEX" -lt "$NODES" ]
+    do
+        INDEX=`expr $INDEX + 1`
         setup_node $K8S_VER $INDEX &
     done
     wait
