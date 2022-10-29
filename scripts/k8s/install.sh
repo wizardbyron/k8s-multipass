@@ -63,15 +63,9 @@ fi
 
 
 echo "Install Kubernetes $K8S_VER packages from $K8S_PKG_URL"
-
 sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://$K8S_PKG_URL/apt/doc/apt-key.gpg
 echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://$K8S_PKG_URL/apt kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -y
 sh -c "sudo apt-get install -y --no-upgrade kubelet=$K8S_VER.0-00 kubeadm=$K8S_VER.0-00 kubectl=$K8S_VER.0-00"
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
-
-# Install calicoctl
-echo "Install calicoctl"
-sudo curl -L https://github.com/projectcalico/calico/releases/download/v3.22.0/calicoctl-linux-amd64 -o /usr/local/bin/calicoctl
-sudo chmod +x /usr/local/bin/calicoctl
