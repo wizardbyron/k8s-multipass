@@ -20,26 +20,11 @@ sudo sed -i "s/#\$nrconf{restart} = 'i';/\$nrconf{restart} = 'a';/g" /etc/needre
 
 sudo apt-get update -y
 sudo apt-get upgrade -y
-sudo apt-get install -y software-properties-common firewalld python3-pip docker.io apt-transport-https ca-certificates
+sudo apt-get install -y software-properties-common firewalld python3-pip docker.io docker-compose apt-transport-https ca-certificates
 sudo systemctl enable --now firewalld
 sudo systemctl enable --now docker.service
 sudo usermod -aG docker $(whoami)
 
-### Upgrade pip
-echo "Upgrade pip."
-if [ -n "$MIRROR_URL" ];then
-    sudo sh -c "python3 -m pip install --upgrade -i https://$MIRROR_URL/pypi/simple pip"
-else
-    sudo sh -c "python3 -m pip install --upgrade pip"
-fi
-
-# install docker-compose
-pip install --user docker-compose
-
-
 ## Post installation
 mkdir $HOME/configs
 ssh-keygen -t rsa -P '' -f $HOME/.ssh/identity
-
-## Set Alias
-alias pip="python3 -m pip"
