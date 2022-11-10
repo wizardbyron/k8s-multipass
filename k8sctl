@@ -13,15 +13,12 @@ function cluster_cmd(){
 
 function setup_control_plane(){
     K8S_VER=$1
-    multipass launch --name k8s-cp \
-        --cpus 4 --mem 4G --disk 40G \
+    multipass launch --name k8s-cp --cpus 4 --mem 4G --disk 40G \
         --mount $(pwd)/scripts/:/var/host/scripts\
         --mount $(pwd)/share/:/var/host/share
     if [ $? -eq 0 ];then
-        multipass exec k8s-cp -- sh -c "/var/host/scripts/init.sh $MIRROR"
+        multipass exec k8s-cp -- sh -c "/var/host/scripts/init.sh $MIRROR_URL"
         multipass exec k8s-cp -- sh -c "/var/host/scripts/nfs/server.sh"
-        multipass exec k8s-cp -- sh -c "/var/host/scripts/dns/server.sh $DOMAIN"
-        multipass exec k8s-cp -- sh -c "/var/host/scripts/openldap/server.sh $DOMAIN"
         multipass exec k8s-cp -- sh -c "/var/host/scripts/k8s/install.sh $K8S_VER"
         multipass exec k8s-cp -- sh -c "/var/host/scripts/k8s/setup-control-plane.sh"
     fi
@@ -31,14 +28,12 @@ function setup_node(){
     K8S_VER=$1
     INDEX=$2
     MASTER_IP=$(multipass list|grep k8s-cp|awk '{print $3}')
-    multipass launch --name k8s-node-$INDEX \
-        --cpus 2 --mem 2G --disk 10G \
+    multipass launch --name k8s-node-$INDEX --cpus 2 --mem 2G --disk 10G \
         --mount $(pwd)/scripts:/var/host/scripts \
         --mount $(pwd)/share:/var/host/share
     if [ $? -eq 0 ];then
-        multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/init.sh $MIRROR"
+        multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/init.sh $MIRROR_URL"
         multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/nfs/client.sh $MASTER_IP"
-        multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/dns/client.sh $MASTER_IP"
         multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/k8s/install.sh $K8S_VER"
         multipass exec k8s-node-$INDEX -- sh -c "/var/host/scripts/k8s/setup-worker-node.sh"
     fi
