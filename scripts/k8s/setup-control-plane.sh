@@ -6,14 +6,7 @@ GOOGLE_REACHABLE=$?
 # Setup firewalld for k8s
 echo "Setting up firewalld for k8s, refer to https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/"
 sudo firewall-cmd --permanent --add-service=bgp
-sudo firewall-cmd --permanent --add-service=http
-sudo firewall-cmd --permanent --add-service=https
-sudo firewall-cmd --permanent --add-service=etcd-client
-sudo firewall-cmd --permanent --add-service=etcd-server
-sudo firewall-cmd --permanent --add-service=kube-apiserver
-sudo firewall-cmd --permanent --add-port=10250/tcp # Kubelet API
-sudo firewall-cmd --permanent --add-port=10257/tcp # kube-controller-manager
-sudo firewall-cmd --permanent --add-port=10259/tcp # kube-scheduler
+sudo firewall-cmd --permanent --add-service=kube-control-plane
 sudo firewall-cmd --reload
 
 # Install and setup control plane
