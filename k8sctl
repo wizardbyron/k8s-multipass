@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-MIRROR="tencent"
+MIRROR_URL="mirrors.tencent.com"
 NODES=2
 DOMAIN="k8s.local"
 
